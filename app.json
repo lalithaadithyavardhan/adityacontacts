@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "Aditya Contacts",
+    "slug": "aditya-contacts",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/20251218_152545.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/20251218_152545.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "permissions": [
+      "CAMERA",
+      "MEDIA_LIBRARY"
+    ],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.aditya.contacts"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/20251218_152545.png",
+        "backgroundColor": "#000000"
+      },
+      "package": "com.aditya.contacts",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.CALL_PHONE",
+        "android.permission.READ_PHONE_STATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/20251218_152545.png"
+    },
+    "plugins": [
+      "expo-asset",
+      "expo-video"
+    ],
+    "owner": "adithyasai533",
+    "extra": {
+      "eas": {
+        "projectId": "95bcefcc-e013-4a60-87b1-b53bee9b7453"
+      }
+    }
+  }
+}

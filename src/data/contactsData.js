@@ -1,0 +1,402 @@
+// src/data/contactsData.js
+
+export const initialContacts = [
+  // --- ADMINS ---
+  {
+    id: '1',
+    name: 'Dr. Rameshwar Rao',
+    category: 'admin',
+    role: 'Principal',
+    phone: '9876543210',
+    email: 'principal@college.edu',
+    location: 'Admin Block, Room 1',
+    isFavorite: false,
+    department: 'Administration',
+    employeeId: '50001',
+    password: 'pass'
+  },
+  {
+    id: '2',
+    name: 'Mr. S. Krishna',
+    category: 'admin',
+    role: 'Registrar',
+    phone: '9123456780',
+    email: 'registrar@college.edu',
+    location: 'Admin Block, Room 4',
+    isFavorite: false,
+    department: 'Administration',
+    employeeId: '50002',
+    password: 'pass'
+  },
+
+  // --- FACULTY (CSE) ---
+  {
+    id: '3',
+    name: 'Dr. Anjali Sharma',
+    category: 'faculty',
+    department: 'CSE',
+    role: 'HOD',
+    phone: '8899776655',
+    email: 'anjali.s@college.edu',
+    location: 'Block A, 101',
+    isFavorite: true,
+    employeeId: '50003',
+    password: 'pass'
+  },
+  {
+    id: '4',
+    name: 'Mr. Ravi Teja',
+    category: 'faculty',
+    department: 'CSE',
+    role: 'Assistant Professor',
+    phone: '7766554433',
+    email: 'ravi.t@college.edu',
+    location: 'Block A, Lab 2',
+    isFavorite: false,
+    employeeId: '50004',
+    password: 'pass'
+  },
+
+  // --- FACULTY (ECE) ---
+  {
+    id: '5',
+    name: 'Mrs. K. Priya',
+    category: 'faculty',
+    department: 'ECE',
+    role: 'Assistant Professor',
+    phone: '9988776655',
+    email: 'priya.k@college.edu',
+    location: 'Block B, 204',
+    isFavorite: false,
+    employeeId: '50005',
+    password: 'pass'
+  },
+
+  // --- 1. TOP LEADERSHIP ---
+  {
+    id: 'admin_1',
+    name: 'Honb. Governor',
+    category: 'admin',
+    department: "Chancellor's Secretariat",
+    role: 'Chancellor',
+    designation: 'Chancellor',
+    office: 'Raj Bhavan',
+    phone: '022-2345-6789',
+    email: 'chancellor@university.edu',
+    isFavorite: false,
+    employeeId: '50006',
+    password: 'pass'
+  },
+  {
+    id: 'admin_2',
+    name: 'Dr. Saleh Hasan Naqib',
+    category: 'admin',
+    department: "Vice Chancellor's Office",
+    role: 'Vice Chancellor',
+    designation: 'Vice Chancellor',
+    office: 'Admin Block A, 1st Floor',
+    phone: '025-888-66783',
+    email: 'vc@aditya.ac.bd',
+    isFavorite: false,
+    employeeId: '50007',
+    password: 'pass'
+  },
+  {
+    id: 'admin_3',
+    name: 'Prof. Anisul Haque',
+    category: 'admin',
+    department: "Pro-Vice Chancellor's Office",
+    role: 'Pro-Vice Chancellor (Academic)',
+    designation: 'Pro-Vice Chancellor',
+    office: 'Admin Block A, 1st Floor',
+    phone: '025-888-66785',
+    email: 'pro.vc@aditya.ac.bd',
+    isFavorite: false,
+    employeeId: '50008',
+    password: 'pass'
+  },
+  {
+    id: 'admin_4',
+    name: 'Dr. M. A. Mannan',
+    category: 'admin',
+    department: "Pro-Vice Chancellor's Office",
+    role: 'Pro-Vice Chancellor (Admin)',
+    designation: 'Pro-Vice Chancellor',
+    office: 'Admin Block A, 1st Floor',
+    phone: '025-888-66786',
+    email: 'pro.vc.admin@aditya.ac.bd',
+    isFavorite: false,
+    employeeId: '50009',
+    password: 'pass'
+  },
+
+  // --- 2. KEY ADMINISTRATIVE OFFICES ---
+  {
+    id: 'admin_5',
+    name: 'Mr. Abdur Rahman',
+    category: 'admin',
+    department: "Registrar's Office",
+    role: 'Registrar',
+    designation: 'Registrar',
+    office: 'Admin Block B, Ground Floor',
+    phone: '025-888-66320',
+    email: 'registrar@aditya.ac.bd',
+    isFavorite: false,
+    employeeId: '50010',
+    password: 'pass'
+  },
+  {
+    id: 'admin_6',
+    name: 'Md. Sultan Ali',
+    category: 'admin',
+    department: "Registrar's Office",
+    role: 'Deputy Registrar',
+    designation: 'Deputy Registrar',
+    office: 'Admin Block B, Ground Floor',
+    phone: '025-888-66321',
+    email: 'deputy.reg@aditya.ac.bd',
+    isFavorite: false,
+    employeeId: '50011',
+    password: 'pass'
+  },
+  {
+    id: 'admin_7',
+    name: 'Mr. Kazi Islam',
+    category: 'admin',
+    department: "Treasurer's Office",
+    role: 'Treasurer',
+    designation: 'Treasurer',
+    office: 'Finance Building, 2nd Floor',
+    phone: '025-888-66400',
+    email: 'treasurer@aditya.ac.bd',
+    isFavorite: false,
+    employeeId: '50012',
+    password: 'pass'
+  },
+  {
+    id: 'admin_8',
+    name: 'Ms. Farhana Ahmed',
+    category: 'admin',
+    department: "Controller of Examinations",
+    role: 'Controller of Examinations',
+    designation: 'Controller',
+    office: 'Exam Hall Building, 1st Floor',
+    phone: '025-888-66550',
+    email: 'controller@aditya.ac.bd',
+    isFavorite: false,
+    employeeId: '50013',
+    password: 'pass'
+  },
+
+  // --- 3. REGULATION & STUDENT WELFARE ---
+  {
+    id: 'admin_9',
+    name: 'Prof. Rahim Uddin',
+    category: 'admin',
+    department: "Proctor's Office",
+    role: 'Proctor',
+    designation: 'Proctor',
+    office: 'Student Center',
+    phone: '025-888-66600',
+    email: 'proctor@aditya.ac.bd',
+    isFavorite: false,
+    employeeId: '50014',
+    password: 'pass'
+  },
+  {
+    id: 'admin_10',
+    name: 'Dr. Selina Banu',
+    category: 'admin',
+    department: "Student Advisor's Office",
+    role: 'Student Advisor',
+    designation: 'Advisor',
+    office: 'Student Center, Room 102',
+    phone: '025-888-66610',
+    email: 'advisor@aditya.ac.bd',
+    isFavorite: false,
+    employeeId: '50015',
+    password: 'pass'
+  },
+  {
+    id: 'admin_11',
+    name: 'Mr. Tofazzal Hossain',
+    category: 'admin',
+    department: "Public Relations Office",
+    role: 'Public Relations Officer',
+    designation: 'PRO',
+    office: 'Admin Block A, Ground Floor',
+    phone: '025-888-66700',
+    email: 'pro@aditya.ac.bd',
+    isFavorite: false,
+    employeeId: '50016',
+    password: 'pass'
+  },
+  {
+    id: 'admin_12',
+    name: 'Dr. Kamal Uddin',
+    category: 'admin',
+    department: "Office of Inspector of Colleges",
+    role: 'Inspector of Colleges',
+    designation: 'Inspector',
+    office: 'Academic Building 3',
+    phone: '025-888-66800',
+    email: 'inspector@aditya.ac.bd',
+    isFavorite: false,
+    employeeId: '50017',
+    password: 'pass'
+  },
+
+  // --- 4. SAMPLE FACULTY ---
+  {
+    id: 'fac_1',
+    name: 'Dr. Ahmed Khan',
+    category: 'faculty',
+    department: 'Computer Science',
+    role: 'Professor',
+    designation: 'Head of Department',
+    office: 'CSE Building, 3rd Floor',
+    phone: '025-888-50001',
+    email: 'ahmed.khan@aditya.ac.bd',
+    isFavorite: true,
+    employeeId: '50018',
+    password: 'pass'
+  },
+  {
+    id: 'fac_2',
+    name: 'Ms. Fatima Begum',
+    category: 'faculty',
+    department: 'Electrical Engineering',
+    role: 'Assistant Professor',
+    designation: 'Assistant Professor',
+    office: 'EEE Building, 2nd Floor',
+    phone: '025-888-50002',
+    email: 'fatima.b@aditya.ac.bd',
+    isFavorite: false,
+    employeeId: '50019',
+    password: 'pass'
+  },
+  {
+    id: 'fac_3',
+    name: 'Dr. S. K. Gupta',
+    category: 'faculty',
+    department: 'Mechanical Engineering',
+    role: 'Associate Professor',
+    designation: 'Associate Professor',
+    office: 'ME Building, Ground Floor',
+    phone: '025-888-50003',
+    email: 'sk.gupta@aditya.ac.bd',
+    isFavorite: false,
+    employeeId: '50020',
+    password: 'pass'
+  },
+
+  // --- OFFICES: COUNCIL OF DEANS ---
+  {
+    id: 'dean_1',
+    name: 'Dr. G. Sridevi',
+    category: 'offices',
+    department: 'Council of Deans',
+    role: 'Dean of Engineering',
+    office: 'Dean Office, Block A',
+    phone: '025-888-70001',
+    email: 'dean.eng@aditya.ac.in',
+    isFavorite: false,
+    employeeId: '50021',
+    password: 'pass'
+  },
+  {
+    id: 'dean_2',
+    name: 'Dr. K. Rao',
+    category: 'offices',
+    department: 'Council of Deans',
+    role: 'Dean of Student Affairs',
+    office: 'Student Center',
+    phone: '025-888-70002',
+    email: 'dean.student@aditya.ac.in',
+    isFavorite: false,
+    employeeId: '50022',
+    password: 'pass'
+  },
+  {
+    id: 'dean_3',
+    name: 'Dr. M. Reddy',
+    category: 'offices',
+    department: 'Council of Deans',
+    role: 'Dean of R&D',
+    office: 'Research Block',
+    phone: '025-888-70003',
+    email: 'dean.rnd@aditya.ac.in',
+    isFavorite: false,
+    employeeId: '50023',
+    password: 'pass'
+  },
+
+  // --- OFFICES: HEADS OF DEPARTMENTS (HODs) ---
+  {
+    id: 'hod_1',
+    name: 'Prof. A. Kumar',
+    category: 'offices',
+    department: 'Heads of Departments (HODs)',
+    role: 'HOD - CSE',
+    office: 'CSE Building, 3rd Floor',
+    phone: '025-888-80001',
+    email: 'hod.cse@aditya.ac.in',
+    isFavorite: false,
+    employeeId: '50024',
+    password: 'pass'
+  },
+  {
+    id: 'hod_2',
+    name: 'Prof. B. Singh',
+    category: 'offices',
+    department: 'Heads of Departments (HODs)',
+    role: 'HOD - ECE',
+    office: 'ECE Building, 2nd Floor',
+    phone: '025-888-80002',
+    email: 'hod.ece@aditya.ac.in',
+    isFavorite: false,
+    employeeId: '50025',
+    password: 'pass'
+  },
+  {
+    id: 'hod_3',
+    name: 'Prof. C. Sharma',
+    category: 'offices',
+    department: 'Heads of Departments (HODs)',
+    role: 'HOD - Mechanical',
+    office: 'Mech Block, Ground Floor',
+    phone: '025-888-80003',
+    email: 'hod.mech@aditya.ac.in',
+    isFavorite: false,
+    employeeId: '50026',
+    password: 'pass'
+  },
+
+  // --- OFFICES: PLACEMENT CELL ---
+  {
+    id: 'place_1',
+    name: 'Mr. Ravi Teja',
+    category: 'offices',
+    department: 'Placement & Training Cell',
+    role: 'Chief Placement Officer',
+    office: 'Placement Block',
+    phone: '025-888-90001',
+    email: 'cpo@aditya.ac.in',
+    isFavorite: false,
+    employeeId: '50027',
+    password: 'pass'
+  },
+  {
+    id: 'place_2',
+    name: 'Ms. S. Gupta',
+    category: 'offices',
+    department: 'Placement & Training Cell',
+    role: 'Placement Coordinator',
+    office: 'Placement Block',
+    phone: '025-888-90002',
+    email: 'placement@aditya.ac.in',
+    isFavorite: false,
+    employeeId: '50028',
+    password: 'pass'
+  },
+];
