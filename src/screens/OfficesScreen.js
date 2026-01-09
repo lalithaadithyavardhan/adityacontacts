@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useCallback, useLayoutEffect } from 'react';
 import { 
   View, 
   FlatList, 
@@ -8,37 +8,168 @@ import {
   StatusBar 
 } from 'react-native';
 import { Card, Avatar, Searchbar, Text, useTheme } from 'react-native-paper';
-import { useNavigation, useIsFocused } from '@react-navigation/native';
+import { useNavigation, useIsFocused, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage'; 
 
-// 1. IMPORT DATA
-import { initialContacts } from '../data/contactsData'; 
+// --- FIREBASE IMPORTS ---
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebaseConfig'; 
 
-// --- HELPER: Smart Icons for Offices ---
+// ---------------------------------------------------------
+// 1. IMPORT DATA FROM ALL FILES (Fallback / Base)
+// ---------------------------------------------------------
+import { initialContacts as officesData } from '../data/OfficesData'; 
+import { initialContacts as enggData } from '../data/SchoolOfEnggData'; 
+import { initialContacts as freshmanData } from '../data/FreshmanEngineeringData';
+import { initialContacts as pharmacyData } from '../data/SchoolOfPharmacyData';
+import { initialContacts as businessData } from '../data/SchoolOfBusinessData';
+import { initialContacts as scienceData } from '../data/SchoolOfScienceData';
+
+// ---------------------------------------------------------
+// 2. CONFIGURATION & HELPERS
+// ---------------------------------------------------------
+
+// --- RULE 1: DESIGNATION RANKING ---
+const ROLE_PRIORITY = {
+  "chancellor": 1,
+  "vice chancellor": 1,
+  "pro vice chancellor": 2,
+  "registrar": 3,
+  "dean": 4,
+  "director": 4,
+  "principal": 5,
+  "head": 5, 
+  "professor": 6,
+  "associate professor": 7,
+  "assistant professor": 8,
+  "asst. professor": 8,
+  "administrative officer": 9,
+  "pa to": 10,
+  "superintendent": 11,
+  "senior assistant": 12,
+  "junior assistant": 13,
+  "attender": 99,
+  "staff": 99
+};
+
+// --- RULE 2: DEPARTMENT RANKING ---
+const DEPT_PRIORITY = {
+  "agricultural": 1, 
+  "civil": 2,
+  "computer science": 3, "cse": 3,
+  "artificial intelligence": 4, "ai & ml": 4, "aiml": 4,
+  "data science": 5, "ds": 5,
+  "electronics": 6, "ece": 6, "communication": 6,
+  "electrical": 7, "eee": 7,
+  "mechanical": 8, "mech": 8,
+  "mining": 9,
+  "petroleum": 10,
+  "pharmacy": 50,
+  "business": 51, "1mba": 51,
+  "science": 52,
+  "humanities": 53,
+  "freshman": 54,
+};
+
+// --- HELPER: Composite Rank ---
+const getCompositeRank = (contact) => {
+  const designation = (contact.designation || contact.role || "").toLowerCase();
+  const department = (contact.department || "").toLowerCase();
+
+  let roleScore = 100;
+  for (const [key, rank] of Object.entries(ROLE_PRIORITY)) {
+    if (designation.includes(key)) {
+      roleScore = rank;
+      break; 
+    }
+  }
+
+  let deptScore = 100;
+  for (const [key, rank] of Object.entries(DEPT_PRIORITY)) {
+    if (department.includes(key)) {
+      deptScore = rank;
+      break;
+    }
+  }
+
+  return { roleScore, deptScore };
+};
+
+// --- HELPER: Icons ---
 const getOfficeStyle = (officeName) => {
   const name = officeName.toLowerCase();
-  
-  // 1. Deans
-  if (name.includes('dean')) return { icon: 'school-outline', color: '#673AB7' }; // Deep Purple
-  
-  // 2. HODs
-  if (name.includes('head') || name.includes('hod')) return { icon: 'grid-outline', color: '#009688' }; // Teal
-  
-  // 3. Placement
-  if (name.includes('placement') || name.includes('training')) return { icon: 'briefcase-outline', color: '#E91E63' }; // Pink
-  
-  // Default
+  if (name.includes('deputy')) return { icon: 'ribbon-outline', color: '#FFD700' }; 
+  if (name.includes('vice chancellor') && !name.includes('pro')) return { icon: 'school-outline', color: '#D32F2F' }; 
+  if (name.includes('pro vice')) return { icon: 'medal-outline', color: '#F57C00' }; 
+  if (name.includes('registrar')) return { icon: 'newspaper-outline', color: '#2196F3' }; 
+  if (name.includes('personal')) return { icon: 'people-outline', color: '#9C27B0' }; 
   return { icon: 'business-outline', color: '#607D8B' };
 };
 
-// --- HELPER: Sorting Priority ---
+// --- HELPER: Folder Priority ---
 const getOfficePriority = (officeName) => {
     const name = officeName.toLowerCase();
-    if (name.includes('dean')) return 1;       // Deans first
-    if (name.includes('head')) return 2;       // HODs second
-    if (name.includes('placement')) return 3;  // Placement third
+    if (name.includes('deputy')) return 1;
+    if (name.includes('vice chancellor') && !name.includes('pro')) return 2;
+    if (name.includes('pro vice')) return 3;
+    if (name.includes('registrar')) return 4;
     return 100;
+};
+
+// ---------------------------------------------------------
+// 3. MATCHING LOGIC (UPDATED: CHECKS BOTH FIELDS)
+// ---------------------------------------------------------
+const checkMatch = (contact, categoryName) => {
+    // FIX: Combine both fields to ensure we don't miss anything
+    const roleField = (contact.role || '').toLowerCase();
+    const desigField = (contact.designation || '').toLowerCase();
+    const fullProfile = roleField + " " + desigField; 
+    
+    const dept = (contact.department || '').toLowerCase();
+
+    // 1. DEPUTY PRO CHANCELLOR
+    if (categoryName === "Deputy Pro Chancellor") {
+        return (fullProfile.includes('dy pro') || fullProfile.includes('deputy pro')) 
+               && !fullProfile.includes('pa to');
+    }
+    // 2. VICE CHANCELLOR
+    if (categoryName === "Vice Chancellor") {
+        return fullProfile.includes('vice chancellor') 
+               && !fullProfile.includes('pro vice') 
+               && !fullProfile.includes('dy') 
+               && !fullProfile.includes('deputy')
+               && !fullProfile.includes('pa to');
+    }
+    // 3. PRO VICE CHANCELLOR
+    if (categoryName === "Pro Vice Chancellor") {
+        return fullProfile.includes('pro vice') 
+               && !fullProfile.includes('dy') 
+               && !fullProfile.includes('deputy')
+               && !fullProfile.includes('pa to');
+    }
+    // 4. REGISTRAR
+    if (categoryName === "Registrar") {
+        return fullProfile.includes('registrar') && !fullProfile.includes('pa to');
+    }
+    // 5. Personal assistant
+    if (categoryName === "Personal assistant") {
+        return fullProfile.includes('pa to') || dept.includes('personal assistant');
+    }
+    return false;
+};
+
+// Helper: Combine all hardcoded files
+const getCombinedInitialData = () => {
+    return [
+        ...(officesData || []),
+        ...(enggData || []),
+        ...(freshmanData || []),
+        ...(pharmacyData || []),
+        ...(businessData || []),
+        ...(scienceData || []),
+    ];
 };
 
 const OfficesScreen = () => {
@@ -47,43 +178,178 @@ const OfficesScreen = () => {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
 
-  // State
+  // --- STATE ---
+  const [masterList, setMasterList] = useState(getCombinedInitialData());
   const [officeSections, setOfficeSections] = useState([]);
   const [selectedSection, setSelectedSection] = useState(null); 
   const [filteredContacts, setFilteredContacts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // 0. HIDE DEFAULT HEADER
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
-  // 1. EXTRACT DATA AUTOMATICALLY
+  // ---------------------------------------------------------
+  // 4. REAL-TIME DATA SYNC (With Employee ID Priority)
+  // ---------------------------------------------------------
+  useFocusEffect(
+    useCallback(() => {
+      let unsubscribe = null;
+
+      const setupRealtimeSync = async () => {
+        try {
+          console.log("📡 Connecting to Firebase for Offices...");
+          
+          unsubscribe = onSnapshot(
+            collection(db, "updates"), 
+            (snapshot) => {
+              const firebaseStaff = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+              }));
+
+              // --- MERGE LOGIC START ---
+              const staffMap = new Map();
+              const initialCombined = getCombinedInitialData();
+
+              // A. Load ALL Hardcoded Data
+              initialCombined.forEach(contact => {
+                const uniqueKey = contact.employeeId 
+                  ? String(contact.employeeId).trim().toLowerCase() 
+                  : String(contact.id).trim();
+                staffMap.set(uniqueKey, contact);
+              });
+              
+              // B. Load Firebase Data (Overwrites Hardcoded)
+              firebaseStaff.forEach(contact => {
+                const uniqueKey = contact.employeeId 
+                  ? String(contact.employeeId).trim().toLowerCase() 
+                  : String(contact.id).trim();
+                staffMap.set(uniqueKey, contact);
+              });
+              
+              const allStaff = Array.from(staffMap.values());
+              // --- MERGE LOGIC END ---
+
+              setMasterList(allStaff);
+
+              // Cache locally
+              AsyncStorage.setItem('aditya_contacts_master', JSON.stringify(allStaff))
+                .catch(err => console.log('⚠️ Cache save failed:', err));
+
+              // --- RECALCULATE FOLDER COUNTS ---
+              const targetRoles = [
+                "Deputy Pro Chancellor",
+                "Vice Chancellor",
+                "Pro Vice Chancellor",
+                "Registrar",
+                "Personal assistant"
+              ];
+
+              const sectionObjects = targetRoles.map(targetRole => {
+                // Use the new merged list with updated checkMatch logic
+                const count = allStaff.filter(c => checkMatch(c, targetRole)).length;
+                return { name: targetRole, count };
+              });
+
+              sectionObjects.sort((a, b) => getOfficePriority(a.name) - getOfficePriority(b.name));
+              setOfficeSections(sectionObjects);
+            },
+            (error) => {
+              console.error('❌ Real-time listener error:', error);
+              // Fallback to cached data
+              AsyncStorage.getItem('aditya_contacts_master').then(cached => {
+                  if(cached) {
+                      const allStaff = JSON.parse(cached);
+                      setMasterList(allStaff);
+                      // Re-run count logic
+                      const targetRoles = ["Deputy Pro Chancellor", "Vice Chancellor", "Pro Vice Chancellor", "Registrar", "Personal assistant"];
+                      const sectionObjects = targetRoles.map(targetRole => {
+                        const count = allStaff.filter(c => checkMatch(c, targetRole)).length;
+                        return { name: targetRole, count };
+                      });
+                      sectionObjects.sort((a, b) => getOfficePriority(a.name) - getOfficePriority(b.name));
+                      setOfficeSections(sectionObjects);
+                  } else {
+                      // Initial fallback
+                      const initialCombined = getCombinedInitialData();
+                      const targetRoles = ["Deputy Pro Chancellor", "Vice Chancellor", "Pro Vice Chancellor", "Registrar", "Personal assistant"];
+                      const sectionObjects = targetRoles.map(targetRole => {
+                        const count = initialCombined.filter(c => checkMatch(c, targetRole)).length;
+                        return { name: targetRole, count };
+                      });
+                      sectionObjects.sort((a, b) => getOfficePriority(a.name) - getOfficePriority(b.name));
+                      setOfficeSections(sectionObjects);
+                  }
+              });
+            }
+          );
+        } catch (error) {
+          console.log("❌ Error setting up real-time sync:", error);
+        }
+      };
+
+      setupRealtimeSync();
+
+      return () => {
+        if (unsubscribe) {
+          unsubscribe();
+        }
+      };
+    }, [])
+  );
+
+  // ---------------------------------------------------------
+  // 5. AUTO-REFRESH LIST LOGIC
+  // ---------------------------------------------------------
   useEffect(() => {
-    // A. Filter only 'offices' category
-    const allOffices = initialContacts.filter(c => c.category === 'offices');
+    if (selectedSection) {
+        // Filter from masterList using the robust checkMatch
+        const peopleInRole = masterList.filter(c => checkMatch(c, selectedSection));
 
-    // B. Get unique section names (e.g. "Council of Deans")
-    const uniqueSections = [...new Set(allOffices.map(item => item.department))]
-      .filter(dept => dept); 
-    
-    // C. Create objects with counts
-    const sectionObjects = uniqueSections.map(section => {
-        const count = allOffices.filter(c => c.department === section).length;
-        return { name: section, count };
-    });
+        // Deduplicate
+        let uniquePeople = peopleInRole.filter((item, index, self) =>
+            index === self.findIndex((t) => (
+                String(t.id) === String(item.id)
+            ))
+        );
 
-    // D. Sort by Priority
-    sectionObjects.sort((a, b) => {
-        const priorityA = getOfficePriority(a.name);
-        const priorityB = getOfficePriority(b.name);
-        return priorityA - priorityB;
-    });
+        // Search Filter
+        if (searchQuery) {
+            const formattedQuery = searchQuery.toLowerCase();
+            uniquePeople = uniquePeople.filter((item) => {
+                return (
+                  item.name.toLowerCase().includes(formattedQuery) ||
+                  (item.role && item.role.toLowerCase().includes(formattedQuery)) ||
+                  (item.designation && item.designation.toLowerCase().includes(formattedQuery))
+                );
+            });
+        }
 
-    setOfficeSections(sectionObjects);
-  }, []);
+        // Sorting
+        uniquePeople.sort((a, b) => {
+            const ranksA = getCompositeRank(a);
+            const ranksB = getCompositeRank(b);
+            if (ranksA.roleScore !== ranksB.roleScore) return ranksA.roleScore - ranksB.roleScore;
+            return ranksA.deptScore - ranksB.deptScore;
+        });
 
-  // 2. HANDLE BACK BUTTON
+        setFilteredContacts(uniquePeople);
+    } else {
+        // Refresh counts if main list changes
+        if (officeSections.length > 0 && masterList.length > 0) {
+             const targetRoles = ["Deputy Pro Chancellor", "Vice Chancellor", "Pro Vice Chancellor", "Registrar", "Personal assistant"];
+             const sectionObjects = targetRoles.map(targetRole => {
+               const count = masterList.filter(c => checkMatch(c, targetRole)).length;
+               return { name: targetRole, count };
+             });
+             sectionObjects.sort((a, b) => getOfficePriority(a.name) - getOfficePriority(b.name));
+             setOfficeSections(sectionObjects);
+        }
+    }
+  }, [masterList, selectedSection, searchQuery]);
+
+  // Back Button
   useEffect(() => {
     const onBackPress = () => {
       if (selectedSection) {
@@ -93,45 +359,43 @@ const OfficesScreen = () => {
       }
       return false; 
     };
-
     if (isFocused) {
       const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
       return () => subscription.remove();
     }
   }, [isFocused, selectedSection]);
 
-  // --- NAVIGATION LOGIC ---
+  // --- NAVIGATION HANDLER ---
   const handleSectionPress = (sectionName) => {
-    const peopleInOffice = initialContacts.filter(c => c.department === sectionName && c.category === 'offices');
-    setFilteredContacts(peopleInOffice);
+    const peopleInRole = masterList.filter(c => checkMatch(c, sectionName));
+
+    // Deduplicate
+    const uniquePeople = peopleInRole.filter((item, index, self) =>
+        index === self.findIndex((t) => (
+            String(t.id) === String(item.id)
+        ))
+    );
+
+    // Sort
+    uniquePeople.sort((a, b) => {
+        const ranksA = getCompositeRank(a);
+        const ranksB = getCompositeRank(b);
+        if (ranksA.roleScore !== ranksB.roleScore) return ranksA.roleScore - ranksB.roleScore;
+        return ranksA.deptScore - ranksB.deptScore;
+    });
+
+    setFilteredContacts(uniquePeople);
     setSelectedSection(sectionName);
     setSearchQuery('');
   };
 
-  // --- SEARCH LOGIC ---
   const onChangeSearch = (query) => {
     setSearchQuery(query);
-    const peopleInSection = initialContacts.filter(c => c.department === selectedSection && c.category === 'offices');
-    
-    if (query) {
-      const formattedQuery = query.toLowerCase();
-      const filtered = peopleInSection.filter((item) => {
-        return (
-          item.name.toLowerCase().includes(formattedQuery) ||
-          (item.role && item.role.toLowerCase().includes(formattedQuery)) ||
-          (item.designation && item.designation.toLowerCase().includes(formattedQuery))
-        );
-      });
-      setFilteredContacts(filtered);
-    } else {
-      setFilteredContacts(peopleInSection);
-    }
   };
 
-  // --- RENDER: FOLDER CARD ---
+  // Render Section
   const renderSectionItem = ({ item }) => {
     const style = getOfficeStyle(item.name);
-    
     return (
       <TouchableOpacity 
         style={styles.card} 
@@ -150,7 +414,7 @@ const OfficesScreen = () => {
     );
   };
 
-  // --- RENDER: CONTACT CARD ---
+  // Render Person
   const renderContactItem = ({ item }) => (
     <Card
       style={styles.contactCard}
@@ -165,8 +429,8 @@ const OfficesScreen = () => {
         />
         <View style={styles.contactDetails}>
             <Text style={styles.contactName}>{item.name}</Text>
-            {/* Show specific designation (e.g. "Dean of Engineering") */}
-            <Text style={styles.contactRole}>{item.role || item.designation}</Text>
+            <Text style={styles.contactRole}>{item.designation || item.role}</Text>
+            <Text style={styles.contactDept}>{item.department}</Text>
         </View>
         <View style={styles.arrowBox}>
             <Ionicons name="call" size={18} color="white" />
@@ -185,29 +449,21 @@ const OfficesScreen = () => {
       {/* HEADER */}
       <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
         {selectedSection ? (
-          // CASE 1: INSIDE A FOLDER (Back -> Office List)
           <View style={styles.headerContent}>
               <TouchableOpacity onPress={() => setSelectedSection(null)} style={styles.backBtn}>
                  <Ionicons name="arrow-back" size={24} color="white" />
               </TouchableOpacity>
-              
               <Text style={styles.headerTitle} numberOfLines={1}>
                  {selectedSection}
               </Text>
-              
               <View style={{width: 24}} /> 
           </View>
         ) : (
-          // CASE 2: MAIN OFFICE LIST (Back -> Home Screen)
           <View style={styles.headerContent}>
               <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                  <Ionicons name="arrow-back" size={24} color="white" />
               </TouchableOpacity>
-
-              <Text style={styles.headerTitle}>
-                 Offices
-              </Text>
-
+              <Text style={styles.headerTitle}>Offices</Text>
               <View style={{width: 24}} /> 
           </View>
         )}
@@ -228,10 +484,16 @@ const OfficesScreen = () => {
           </View>
           <FlatList
             data={filteredContacts}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => String(item.id)}
             renderItem={renderContactItem}
             contentContainerStyle={styles.listContainer}
             showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                    <Ionicons name="people-outline" size={60} color="#ccc" />
+                    <Text style={styles.emptyText}>No members found.</Text>
+                </View>
+            }
           />
         </View>
       ) : (
@@ -241,7 +503,7 @@ const OfficesScreen = () => {
           renderItem={renderSectionItem}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
-          ListHeaderComponent={<Text style={styles.sectionHeader}>Departments & Cells</Text>}
+          ListHeaderComponent={<Text style={styles.sectionHeader}>Leadership</Text>}
         />
       )}
     </SafeAreaView>
@@ -269,7 +531,6 @@ const styles = StyleSheet.create({
   listContainer: { padding: 15, paddingBottom: 40 },
   sectionHeader: { fontSize: 14, fontWeight: '700', color: '#888', marginBottom: 10, marginLeft: 5, textTransform: 'uppercase', letterSpacing: 1 },
   
-  // Folder Card
   card: {
     backgroundColor: 'white',
     borderRadius: 15,
@@ -288,17 +549,20 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 16, fontWeight: '700', color: '#333', marginBottom: 4 },
   cardCount: { fontSize: 13, color: '#888', fontWeight: '500' },
 
-  // Contact Card
   contactCard: { backgroundColor: 'white', borderRadius: 12, marginBottom: 10, elevation: 2, overflow: 'hidden' },
   contactRow: { flexDirection: 'row', alignItems: 'center', padding: 15 },
   contactDetails: { flex: 1, marginLeft: 15 },
   contactName: { fontSize: 16, fontWeight: 'bold', color: '#333' },
   contactRole: { fontSize: 13, color: '#666', marginTop: 2 },
+  contactDept: { fontSize: 11, color: '#999', marginTop: 2 }, 
   arrowBox: { backgroundColor: '#4CAF50', width: 35, height: 35, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
 
   searchContainer: { paddingHorizontal: 15, marginBottom: 5 },
   searchBar: { borderRadius: 12, backgroundColor: 'white', elevation: 2, height: 45 },
   searchInput: { fontSize: 15, alignSelf: 'center' },
+  
+  emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 50 },
+  emptyText: { color: '#999', marginTop: 10, fontSize: 16 }
 });
 
 export default OfficesScreen;

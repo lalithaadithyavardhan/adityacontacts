@@ -2,40 +2,47 @@
   "expo": {
     "name": "Aditya Contacts",
     "slug": "aditya-contacts",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
-    "icon": "./assets/20251218_152545.png",
+    "icon": "./assets/20260104_195159.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/20251218_152545.png",
+      "image": "./assets/20260104_195159.png",
       "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "backgroundColor": "#ffffff"
     },
     "permissions": [
       "CAMERA",
-      "MEDIA_LIBRARY"
+      "MEDIA_LIBRARY",
+      "READ_CONTACTS",
+      "WRITE_CONTACTS"
     ],
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.aditya.contacts"
+      "bundleIdentifier": "com.aditya.contacts",
+      "infoPlist": {
+        "NSContactsUsageDescription": "This app requires access to your contacts to display and manage them."
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/20251218_152545.png",
-        "backgroundColor": "#000000"
+        "foregroundImage": "./assets/20260104_195159.png",
+        "backgroundColor": "#ffffff"
       },
       "package": "com.aditya.contacts",
       "versionCode": 1,
       "permissions": [
         "android.permission.CALL_PHONE",
-        "android.permission.READ_PHONE_STATE"
+        "android.permission.READ_PHONE_STATE",
+        "android.permission.READ_CONTACTS",
+        "android.permission.WRITE_CONTACTS"
       ]
     },
     "web": {
-      "favicon": "./assets/20251218_152545.png"
+      "favicon": "./assets/20260104_195159.png"
     },
     "plugins": [
       "expo-asset",

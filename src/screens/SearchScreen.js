@@ -18,7 +18,9 @@ import { useTheme } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 
-// 1. IMPORT REAL DATA
+// 1. IMPORT FALLBACK DATA
+// (Ideally this should point to a file that combines all schools, 
+// but even if just one, the AsyncStorage logic below handles the rest)
 import { initialContacts } from '../data/contactsData';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -39,15 +41,21 @@ const SearchScreen = ({ navigation }) => {
     useCallback(() => {
       const loadData = async () => {
         try {
-          const storedData = await AsyncStorage.getItem('contacts');
+          // FIX: Use the same key 'aditya_contacts_master' used in other screens
+          // This ensures newly synced Firebase data appears here!
+          const storedData = await AsyncStorage.getItem('aditya_contacts_master');
+          
           if (storedData) {
-            setAllContacts(JSON.parse(storedData));
+            const parsedData = JSON.parse(storedData);
+            setAllContacts(parsedData);
+            // console.log(`🔍 Search loaded ${parsedData.length} contacts from cache`);
           } else {
-            setAllContacts(initialContacts);
+            // Fallback to hardcoded if no cache exists yet
+            setAllContacts(initialContacts || []);
           }
         } catch (error) {
           console.error("Error loading contacts for search:", error);
-          setAllContacts(initialContacts);
+          setAllContacts(initialContacts || []);
         }
       };
       loadData();
@@ -70,6 +78,7 @@ const SearchScreen = ({ navigation }) => {
     Linking.openURL(`mailto:${email}`).catch(() => Alert.alert('Error', 'Cannot open email'));
   };
 
+  // --- SEARCH ENGINE ---
   const performSearch = (query) => {
     if (!query.trim()) {
       setSearchResults([]);
@@ -78,22 +87,41 @@ const SearchScreen = ({ navigation }) => {
     }
 
     setIsSearching(true);
-    const lowerQuery = query.toLowerCase();
+    const lowerQuery = query.toLowerCase().trim();
     
-    // Search against the REAL 'allContacts' state
+    // Helper to safely check fields
+    const check = (field) => field && String(field).toLowerCase().includes(lowerQuery);
+
     const results = allContacts.filter(contact => 
-      (contact.name && contact.name.toLowerCase().includes(lowerQuery)) ||
-      (contact.title && contact.title.toLowerCase().includes(lowerQuery)) ||
-      (contact.designation && contact.designation.toLowerCase().includes(lowerQuery)) || 
-      (contact.office && contact.office.toLowerCase().includes(lowerQuery)) ||
-      (contact.department && contact.department.toLowerCase().includes(lowerQuery)) || 
-      (contact.email && contact.email.toLowerCase().includes(lowerQuery))
+      // 1. Name
+      check(contact.name) ||
+      
+      // 2. Role / Designation / Title
+      check(contact.title) ||
+      check(contact.designation) ||
+      check(contact.role) ||
+      
+      // 3. Department / Office
+      check(contact.office) ||
+      check(contact.department) ||
+      
+      // 4. Contact Details (Email)
+      check(contact.email) ||
+
+      // 5. PHONE NUMBERS (The new feature)
+      check(contact.phone) ||
+      check(contact.mobile) || // Some data might use 'mobile'
+      
+      // 6. IDs (Employee ID)
+      check(contact.employeeId) || 
+      check(contact.id)
     );
 
     setSearchResults(results);
     setIsSearching(false);
   };
 
+  // Debounce Search (Wait for typing to stop)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       performSearch(searchQuery);
@@ -126,9 +154,13 @@ const SearchScreen = ({ navigation }) => {
             >
               {displayName}
             </Text>
+            
+            {/* Show Designation */}
             <Text style={[styles.contactTitle, { color: theme.colors.textSecondary || '#666' }]}>
               {displayTitle}
             </Text>
+            
+            {/* Show Department */}
             <Text style={[styles.contactOffice, { color: theme.colors.textSecondary || '#666' }]}>
               {displayOffice}
             </Text>
@@ -170,7 +202,7 @@ const SearchScreen = ({ navigation }) => {
       <Text style={[styles.emptyStateSubtitle, { color: theme.colors.textSecondary || '#666' }]}>
         {searchQuery 
           ? `No contacts found for "${searchQuery}"`
-          : 'Search by name, title, office, or email'
+          : 'Search by name, designation, department, or phone number '
         }
       </Text>
     </View>
@@ -226,11 +258,12 @@ const SearchScreen = ({ navigation }) => {
             <Ionicons name="search" size={20} color={theme.colors.textSecondary || '#999'} />
             <TextInput
               style={[styles.searchInput, { color: theme.colors.text }]}
-              placeholder="Search contacts..."
+              placeholder="Search (Name, Dept, Phone...)"
               placeholderTextColor={theme.colors.textSecondary || '#999'}
               value={searchQuery}
               onChangeText={setSearchQuery}
               autoFocus={false}
+              keyboardType="default" // Use default to allow both letters and numbers
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>

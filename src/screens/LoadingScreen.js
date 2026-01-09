@@ -1,7 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, StyleSheet, StatusBar } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import LoadingAnimation from './LoadingAnimation'; // Ensure path is correct
+import * as SplashScreen from 'expo-splash-screen'; // Import this
+import LoadingAnimation from './LoadingAnimation';
+
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync().catch(() => {
+  /* reloading the app might trigger some race conditions, ignore them */
+});
 
 const LoadingScreen = ({ navigation }) => {
   const [userSession, setUserSession] = useState(null);
@@ -11,23 +17,30 @@ const LoadingScreen = ({ navigation }) => {
   useEffect(() => {
     const prepareApp = async () => {
       try {
-        // Check session immediately
         const session = await AsyncStorage.getItem('userSession');
         setUserSession(session);
       } catch (error) {
         console.error("Session check failed", error);
       } finally {
-        setDataLoaded(true); // Mark data as ready
+        setDataLoaded(true);
       }
     };
 
     prepareApp();
   }, []);
 
+  // New function: Hides the App Icon only when video is actually playing
+  const handleVideoReady = async () => {
+    try {
+      await SplashScreen.hideAsync();
+    } catch (e) {
+      // ignore
+    }
+  };
+
   const handleVideoFinish = () => {
     if (navigationPerformed.current) return;
     
-    // Only navigate if our data check is done
     if (dataLoaded) {
       navigationPerformed.current = true;
       if (userSession) {
@@ -36,8 +49,6 @@ const LoadingScreen = ({ navigation }) => {
         navigation.replace('Login');
       }
     } else {
-      // If video finished SUPER fast but AsyncStorage is slow (rare),
-      // wait a tiny bit and retry.
       setTimeout(() => {
          handleVideoFinish();
       }, 500);
@@ -46,9 +57,11 @@ const LoadingScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* Hide status bar for full immersion */}
       <StatusBar hidden /> 
-      <LoadingAnimation onFinish={handleVideoFinish} />
+      <LoadingAnimation 
+        onFinish={handleVideoFinish} 
+        onReady={handleVideoReady} // Pass the ready handler
+      />
     </View>
   );
 };
@@ -56,7 +69,8 @@ const LoadingScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000', // Matches video background
+    // CHANGED: Match the video background color exactly to prevent black flashes
+    backgroundColor: '#f0e8e8ff', 
   },
 });
 

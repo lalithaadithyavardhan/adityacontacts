@@ -14,17 +14,17 @@ import {
   ToastAndroid,
   Modal,
   TextInput,
-  KeyboardAvoidingView,
   TouchableWithoutFeedback,
   Keyboard,
-  StatusBar // Added StatusBar
+  StatusBar,
+  Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Contacts from 'expo-contacts';
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; // Added Insets
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // --- NEW FEATURES Imports ---
 import { captureRef } from 'react-native-view-shot';
@@ -34,9 +34,11 @@ import * as Clipboard from 'expo-clipboard';
 // 1. IMPORT YOUR FILE DATA AS A BACKUP
 import { initialContacts } from '../data/contactsData';
 
+const { width } = Dimensions.get('window');
+
 const ContactDetailScreen = ({ route, navigation }) => {
   const theme = useTheme();
-  const insets = useSafeAreaInsets(); // Get safe area insets
+  const insets = useSafeAreaInsets();
   
   // Reference for the hidden Business Card view
   const viewShotRef = useRef();
@@ -44,7 +46,7 @@ const ContactDetailScreen = ({ route, navigation }) => {
   const [contact, setContact] = useState(route.params.contact);
   const [isFavorite, setIsFavorite] = useState(contact.isFavorite || false);
 
-  // --- NEW STATE FOR "SAVE TO DEVICE" MODAL ---
+  // --- STATE FOR "SAVE TO DEVICE" MODAL ---
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [saveName, setSaveName] = useState('');
   const [savePhone, setSavePhone] = useState('');
@@ -52,7 +54,7 @@ const ContactDetailScreen = ({ route, navigation }) => {
   const [saveOffice, setSaveOffice] = useState('');
   const [errors, setErrors] = useState({}); 
 
-  // 0. HIDE DEFAULT HEADER to use Custom Orange Header
+  // 0. HIDE DEFAULT HEADER
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
@@ -91,6 +93,31 @@ const ContactDetailScreen = ({ route, navigation }) => {
   const handleEmail = email => {
     if (!email) return Alert.alert('Error', 'No email address available');
     Linking.openURL(`mailto:${email}`).catch(() => Alert.alert('Error', 'Cannot open email'));
+  };
+
+  // --- WHATSAPP FEATURE ---
+  const handleWhatsApp = (phone) => {
+    if (!phone) return Alert.alert('Error', 'No phone number available');
+    
+    let cleanPhone = phone.replace(/[^\d]/g, '');
+    if (cleanPhone.length === 10) {
+        cleanPhone = '91' + cleanPhone;
+    }
+
+    const url = `whatsapp://send?phone=${cleanPhone}`;
+    Linking.openURL(url).catch(() => {
+        Alert.alert('Error', 'WhatsApp is not installed or cannot be opened');
+    });
+  };
+
+  // --- REPORT ISSUE FEATURE ---
+  const handleReport = () => {
+    const subject = `Correction for: ${contact.name}`;
+    const body = `Hi developer,%0D%0A%0D%0AI found an error in this contact:%0D%0AName: ${contact.name}%0D%0AID: ${contact.id}%0D%0A%0D%0ACorrection needed:%0D%0A(Type correction here)`;
+    // CHANGE EMAIL HERE
+    const mailUrl = `mailto:adithyasai533@gmail.com?subject=${subject}&body=${body}`;
+
+    Linking.openURL(mailUrl).catch(() => Alert.alert('Error', 'Could not open email client'));
   };
 
   /* ---------------- SHARE LOGIC ---------------- */
@@ -227,26 +254,21 @@ Office: ${office}
   const displayName = contact.name;
   const displayTitle = contact.title || contact.designation || contact.role || 'Staff';
   const displayOffice = contact.office || contact.department || 'General';
-  const displayAddress = contact.address || contact.location || 'Not Available';
+  const displayAddress = contact.address || contact.office || 'Not Available';
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#F05819" />
 
-      {/* --- CUSTOM HEADER (MATCHES ADMIN SCREEN) --- */}
+      {/* --- CUSTOM HEADER --- */}
       <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
         <View style={styles.headerContent}>
-             {/* 1. Back Button */}
              <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                 <Ionicons name="arrow-back" size={24} color="white" />
              </TouchableOpacity>
 
-             {/* 2. Title (Contact Name) */}
-             <Text style={styles.headerTitle} numberOfLines={1}>
-                {displayName}
-             </Text>
+             <Text style={styles.headerTitle}>Contact Details</Text>
 
-             {/* 3. Edit Button (Right) */}
              <TouchableOpacity 
                 style={styles.editBtn} 
                 onPress={() => navigation.navigate('EditContact', { contact })}
@@ -256,7 +278,7 @@ Office: ${office}
         </View>
       </View>
 
-      {/* --- HIDDEN CARD (Watermarked + No Divider) --- */}
+      {/* --- HIDDEN CARD (For Sharing) --- */}
       <View ref={viewShotRef} style={styles.hiddenCardContainer} collapsable={false}>
         <View style={styles.cardOuterBorder}>
             <View style={styles.watermarkContainer}>
@@ -277,7 +299,7 @@ Office: ${office}
                         <Text style={styles.cardDept}>{displayOffice}</Text>
                     </View>
                 </View>
-                {/* No Divider */}
+                
                 <View style={styles.cardDetails}>
                     <View style={styles.cardRow}>
                         <Ionicons name="call" size={18} color="#F05819" />
@@ -302,6 +324,7 @@ Office: ${office}
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
+        {/* PROFILE SECTION */}
         <View style={styles.profile}>
           {contact.photo || contact.image ? (
             <Image source={{ uri: contact.photo || contact.image }} style={styles.avatar} />
@@ -317,15 +340,16 @@ Office: ${office}
 
         <View style={styles.divider} />
 
+        {/* QUICK ACTIONS ROW (Favorite / Add) */}
         <View style={styles.quickActions}>
           <TouchableOpacity style={styles.quickBtn} onPress={toggleFavorite}>
             <Ionicons name={isFavorite ? 'star' : 'star-outline'} size={22} color="#F05819" />
-            <Text style={styles.quickText}>{isFavorite ? 'Favorite' : 'Add Favorite'}</Text>
+            <Text style={styles.quickText}>{isFavorite ? 'Favorite' : 'Add Fav'}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.quickBtn} onPress={openAddContactModal}>
             <Ionicons name="person-add" size={22} color="#F05819" />
-            <Text style={styles.quickText}>Add Contact</Text>
+            <Text style={styles.quickText}>Save Contact</Text>
           </TouchableOpacity>
         </View>
 
@@ -333,11 +357,48 @@ Office: ${office}
         <Info label="PHONE" value={contact.phone} icon="call" onPress={() => handleCall(contact.phone)} />
         <Info label="EMAIL" value={contact.email} icon="mail" onPress={() => handleEmail(contact.email)} />
 
-        <View style={styles.actions}>
-          <Action icon="call" text="Call" color="#4CAF50" onPress={() => handleCall(contact.phone)} />
-          <Action icon="chatbubble" text="Message" color="#2196F3" onPress={() => handleMessage(contact.phone)} />
-          <Action icon="share-social" text="Share Card" color="#F05819" onPress={handleShareContact} />
+        <View style={styles.divider} />
+
+        {/* --- SOLID CIRCLE ACTION BUTTONS --- */}
+        <View style={styles.actionRow}>
+          
+          {/* 1. CALL (Green) */}
+          <SolidButton 
+            icon="call" 
+            color="#4CAF50" 
+            onPress={() => handleCall(contact.phone)} 
+          />
+          
+          {/* 2. WHATSAPP (Whatsapp Green) */}
+          <SolidButton 
+            icon="logo-whatsapp" 
+            color="#25D366" 
+            onPress={() => handleWhatsApp(contact.phone)} 
+          />
+
+          {/* 3. MESSAGE (Blue) */}
+          <SolidButton 
+            icon="chatbubble" 
+            color="#2196F3" 
+            onPress={() => handleMessage(contact.phone)} 
+          />
+          
+          {/* 4. SHARE (Orange) */}
+          <SolidButton 
+            icon="share-social" 
+            color="#FFB74D" 
+            onPress={handleShareContact} 
+          />
+          
         </View>
+
+        {/* --- REPORT ISSUE BUTTON (WIDE & SOLID) --- */}
+        <TouchableOpacity style={styles.solidReportBtn} onPress={handleReport}>
+             <Ionicons name="alert-circle" size={20} color="#D32F2F" />
+             <Text style={styles.solidReportText}>Report Incorrect Info</Text>
+        </TouchableOpacity>
+
+        <View style={{height: 40}} /> 
       </ScrollView>
 
       {/* --- ADD CONTACT MODAL --- */}
@@ -392,7 +453,7 @@ Office: ${office}
                         />
                     </View>
 
-                     <View style={styles.inputGroup}>
+                      <View style={styles.inputGroup}>
                         <Text style={styles.inputLabel}>Office / Department</Text>
                         <TextInput 
                             style={styles.inputField} 
@@ -419,6 +480,8 @@ Office: ${office}
   );
 };
 
+// --- HELPER COMPONENTS ---
+
 const Info = ({ label, value, icon, onPress }) => (
   <View style={styles.infoRow}>
     <View style={{ flex: 1 }}>
@@ -426,31 +489,34 @@ const Info = ({ label, value, icon, onPress }) => (
       <Text style={styles.value}>{value || 'N/A'}</Text>
     </View>
     {icon && value ? (
-      <TouchableOpacity onPress={onPress} style={{ padding: 5 }}>
+      <TouchableOpacity onPress={onPress} style={{ padding: 8 }}>
         <Ionicons name={icon} size={22} color="#F05819" />
       </TouchableOpacity>
     ) : null}
   </View>
 );
 
-const Action = ({ icon, text, color, onPress }) => (
-  <TouchableOpacity style={[styles.btn, { backgroundColor: color }]} onPress={onPress}>
-    <Ionicons name={icon} size={22} color="#fff" />
-    <Text style={styles.btnText}>{text}</Text>
+// --- SOLID CIRCLE BUTTON COMPONENT ---
+const SolidButton = ({ icon, color, onPress }) => (
+  <TouchableOpacity 
+    activeOpacity={0.8}
+    onPress={onPress}
+    style={[styles.solidCircleBtn, { backgroundColor: color }]}
+  >
+    <Ionicons name={icon} size={28} color="#fff" />
   </TouchableOpacity>
 );
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   
-  // --- HEADER STYLES (MATCHING ADMIN SCREEN) ---
+  // --- HEADER ---
   header: {
     backgroundColor: '#F05819',
     paddingBottom: 20,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
-    marginBottom: 0, // Removed extra margin for clean look
     elevation: 5,
     shadowColor: '#F05819',
     shadowOffset: { width: 0, height: 4 },
@@ -461,40 +527,88 @@ const styles = StyleSheet.create({
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between', // Ensures space between back, title, edit
+    justifyContent: 'space-between',
   },
   headerTitle: {
-    fontSize: 20, // Slightly smaller to fit long names
+    fontSize: 18, 
     fontWeight: 'bold',
     color: 'white',
-    flex: 1, // Takes up remaining space
-    textAlign: 'center', // Centers the text
-    marginHorizontal: 10, // Adds gap from buttons
+    flex: 1, 
+    textAlign: 'center', 
+    textTransform: 'uppercase',
+    letterSpacing: 1
   },
-  backBtn: {
-    padding: 5,
-  },
-  editBtn: {
-    padding: 5,
-  },
+  backBtn: { padding: 5 },
+  editBtn: { padding: 5 },
 
-  content: { padding: 20, paddingTop: 10 },
+  // --- CONTENT ---
+  content: { paddingHorizontal: 20, paddingVertical: 10 },
+  
   profile: { alignItems: 'center', marginBottom: 25, marginTop: 10 },
-  avatar: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', elevation: 4, marginBottom: 15 },
-  name: { fontSize: 24, fontWeight: 'bold', textAlign: 'center' },
-  sub: { color: '#666', fontSize: 16, textAlign: 'center' },
-  divider: { height: 1, backgroundColor: '#ddd', marginVertical: 15 },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 10, paddingVertical: 5 },
-  label: { fontSize: 12, color: '#888', marginBottom: 2 },
+  avatar: { 
+      width: 120, height: 120, borderRadius: 60, 
+      backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center', 
+      elevation: 4, marginBottom: 15,
+      borderWidth: 3, borderColor: '#fff'
+  },
+  name: { fontSize: 22, fontWeight: 'bold', textAlign: 'center', color: '#333' },
+  sub: { color: '#666', fontSize: 15, textAlign: 'center', marginTop: 2 },
+  
+  divider: { height: 1, backgroundColor: '#eee', marginVertical: 20 },
+  
+  infoRow: { 
+      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', 
+      marginVertical: 12 
+  },
+  label: { fontSize: 11, color: '#999', marginBottom: 4, fontWeight: 'bold', letterSpacing: 0.5 },
   value: { fontSize: 16, color: '#333' },
-  actions: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 30 },
-  btn: { borderRadius: 25, paddingVertical: 12, paddingHorizontal: 20, alignItems: 'center', minWidth: 90, elevation: 2 },
+  
   quickActions: { flexDirection: 'row', justifyContent: 'space-around', marginVertical: 10 },
   quickBtn: { alignItems: 'center', padding: 10 },
-  quickText: { fontSize: 12, marginTop: 4, color: '#444' },
-  btnText: { color: '#fff', fontSize: 12, marginTop: 5, fontWeight: '600' },
+  quickText: { fontSize: 12, marginTop: 4, color: '#666' },
 
-  // --- CARD STYLES ---
+  // --- SOLID ACTION ROW ---
+  actionRow: { 
+      flexDirection: 'row', 
+      justifyContent: 'space-evenly', 
+      alignItems: 'center',
+      marginTop: 20,
+      marginBottom: 30
+  },
+  solidCircleBtn: { 
+      width: 60, 
+      height: 60, 
+      borderRadius: 30, 
+      justifyContent: 'center', 
+      alignItems: 'center',
+      // Clean shadow for pop
+      shadowColor: "#ffffffff",
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 5,
+  },
+
+  // --- SOLID REPORT BUTTON ---
+  solidReportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffebee', // Light red background
+    paddingVertical: 15,
+    borderRadius: 30,
+    width: '90%',
+    alignSelf: 'center',
+    marginTop: 10
+  },
+  solidReportText: {
+    marginLeft: 10,
+    color: '#D32F2F', 
+    fontSize: 15,
+    fontWeight: 'bold'
+  },
+
+  // --- CARD STYLES (Hidden) ---
   hiddenCardContainer: { position: 'absolute', top: 0, left: 0, zIndex: -1, width: 420, backgroundColor: '#fff' },
   cardOuterBorder: { margin: 10, borderRadius: 15, borderWidth: 2, borderColor: '#F05819', backgroundColor: '#fff', overflow: 'hidden', position: 'relative' },
   watermarkContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', zIndex: 0 },
@@ -513,87 +627,21 @@ const styles = StyleSheet.create({
   cardFooterText: { fontSize: 10, color: '#999', fontStyle: 'italic' },
 
   // --- MODAL STYLES ---
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContainer: {
-    margin: 20,
-    backgroundColor: 'white',
-    borderRadius: 15,
-    padding: 20,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#F05819',
-  },
-  inputGroup: {
-    marginBottom: 15,
-  },
-  inputLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 5,
-    fontWeight: '600',
-  },
-  inputField: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: '#fafafa',
-  },
-  inputError: {
-    borderColor: 'red',
-  },
-  errorText: {
-    color: 'red',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
-  },
-  modalBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelBtn: {
-    backgroundColor: '#f5f5f5',
-    marginRight: 10,
-  },
-  saveBtn: {
-    backgroundColor: '#F05819',
-  },
-  cancelBtnText: {
-    color: '#666',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  saveBtnText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
+  modalOverlay: { flex: 1, justifyContent: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' },
+  modalContainer: { margin: 20, backgroundColor: 'white', borderRadius: 15, padding: 20, elevation: 5 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#F05819' },
+  inputGroup: { marginBottom: 15 },
+  inputLabel: { fontSize: 12, color: '#666', marginBottom: 5, fontWeight: '600' },
+  inputField: { borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 12, fontSize: 16, backgroundColor: '#fafafa' },
+  inputError: { borderColor: 'red' },
+  errorText: { color: 'red', fontSize: 12, marginTop: 4 },
+  modalActions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
+  modalBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  cancelBtn: { backgroundColor: '#f5f5f5', marginRight: 10 },
+  saveBtn: { backgroundColor: '#F05819' },
+  cancelBtnText: { color: '#666', fontWeight: 'bold', fontSize: 16 },
+  saveBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 });
 
 export default ContactDetailScreen;

@@ -4,30 +4,40 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 
 const { width, height } = Dimensions.get('window');
 
-const LoadingAnimation = ({ onFinish }) => {
+const LoadingAnimation = ({ onFinish, onReady }) => {
   // 1. Create the player instance
-  const player = useVideoPlayer(require('../../assets/1000064992-vmake.mp4'), (player) => {
+  const player = useVideoPlayer(require('../../assets/km_20260104_1080p_30f_20260104_200900.mp4'), (player) => {
     player.loop = false;
     player.play();
   });
 
-  // 2. Listen for finish
+  // 2. Listen for events
   useEffect(() => {
-    const subscription = player.addListener('playToEnd', () => {
+    // Listener 1: When video actually starts playing (Is Playing = true)
+    const playingSubscription = player.addListener('playingChange', (isPlaying) => {
+      if (isPlaying && onReady) {
+        onReady(); // Hide the splash screen NOW
+      }
+    });
+
+    // Listener 2: When video finishes
+    const finishSubscription = player.addListener('playToEnd', () => {
       if (onFinish) onFinish();
     });
 
-    return () => subscription.remove();
-  }, [player, onFinish]);
+    return () => {
+      playingSubscription.remove();
+      finishSubscription.remove();
+    };
+  }, [player, onFinish, onReady]);
 
   return (
     <View style={styles.container}>
       <VideoView
         style={styles.video}
         player={player}
-        contentFit="cover"
+        contentFit="cover" // Ensures no black bars
         nativeControls={false}
-        // FIXED: Replaced 'allowsFullscreen' with 'fullscreenOptions'
         fullscreenOptions={{ isAllowed: false }} 
       />
     </View>
@@ -37,7 +47,8 @@ const LoadingAnimation = ({ onFinish }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    // Ensure this matches the LoadingScreen background
+    backgroundColor: '#f0e8e8ff', 
     width: width,
     height: height,
   },
