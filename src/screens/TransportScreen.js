@@ -17,47 +17,58 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebaseConfig'; 
 
-// 1. IMPORT DATA
+// 1. IMPORT DATA (Fallback)
 import { initialContacts } from '../data/TransportData'; 
 
 // --- HELPER: Transport Icons ---
 const getTransportStyle = (unitName) => {
   const name = unitName.toLowerCase();
   
-  if (name.includes('office') || name.includes('manager')) return { icon: 'briefcase-outline', color: '#607D8B' }; 
-  if (name.includes('coordinator') || name.includes('in-charge')) return { icon: 'map-outline', color: '#2196F3' }; 
-  if (name.includes('driver')) return { icon: 'bus-outline', color: '#F44336' }; 
-  if (name.includes('mechanic') || name.includes('maintenance')) return { icon: 'construct-outline', color: '#FF9800' }; 
+  if (name.includes('office') || name.includes('manager')) return { icon: 'briefcase-outline', color: '#607D8B' }; // Grey (Admin)
+  if (name.includes('coordinator') || name.includes('in-charge')) return { icon: 'map-outline', color: '#2196F3' }; // Blue (Routes)
+  if (name.includes('driver')) return { icon: 'bus-outline', color: '#F44336' }; // Red (Bus)
+  if (name.includes('mechanic') || name.includes('maintenance')) return { icon: 'construct-outline', color: '#FF9800' }; // Orange (Repair)
 
+  // Default fallback
   return { icon: 'car-sport-outline', color: '#9E9E9E' };
 };
 
 // ---------------------------------------------------------
 // 2. SMART MATCHING LOGIC
 // ---------------------------------------------------------
+// Checks Department, Role, and Designation for Transport roles
 const checkTransportMatch = (contact, folderName) => {
     const dept = (contact.department || "").toLowerCase().trim();
     const role = (contact.role || "").toLowerCase().trim();
     const desig = (contact.designation || "").toLowerCase().trim();
     const targetFolder = folderName.toLowerCase().trim();
     
+    // Combine all fields
     const fullProfile = `${dept} ${role} ${desig}`;
 
-    if (targetFolder === "drivers") return fullProfile.includes("driver");
-    
+    // 1. DRIVERS
+    if (targetFolder === "drivers") {
+        return fullProfile.includes("driver");
+    }
+
+    // 2. BUS MAINTENANCE
     if (targetFolder.includes("maintenance") || targetFolder.includes("mechanic")) {
         return fullProfile.includes("mechanic") || fullProfile.includes("repair") || fullProfile.includes("maintenance");
     }
 
+    // 3. BUS COORDINATORS
     if (targetFolder.includes("coordinator")) {
-        return fullProfile.includes("coordinator") || fullProfile.includes("in-charge");
+        return fullProfile.includes("coordinator") || fullProfile.includes("in-charge") || fullProfile.includes("incharge");
     }
 
+    // 4. TRANSPORT OFFICE
     if (targetFolder.includes("office") || targetFolder.includes("manager")) {
-        return (fullProfile.includes("manager") || fullProfile.includes("admin")) 
-               && !fullProfile.includes("driver");
+        return (fullProfile.includes("manager") || fullProfile.includes("admin") || fullProfile.includes("clerk")) 
+               && !fullProfile.includes("driver") 
+               && !fullProfile.includes("mechanic");
     }
 
+    // Default Fallback
     return dept === targetFolder || dept.includes(targetFolder);
 };
 
@@ -82,6 +93,7 @@ const TransportScreen = () => {
   const insets = useSafeAreaInsets();
   
   // --- STATE ---
+  // Initialize with hardcoded data for Instant Load
   const [masterContacts, setMasterContacts] = useState(initialContacts);
   const [transportUnits, setTransportUnits] = useState(() => calculateTransportUnits(initialContacts));
   
@@ -95,7 +107,7 @@ const TransportScreen = () => {
   }, [navigation]);
 
   // ---------------------------------------------------------
-  // 1. REAL-TIME DATA SYNC (FIXED MERGE LOGIC)
+  // 1. REAL-TIME DATA SYNC (With Employee ID Priority)
   // ---------------------------------------------------------
   useFocusEffect(
     useCallback(() => {
@@ -108,36 +120,29 @@ const TransportScreen = () => {
           unsubscribe = onSnapshot(
             collection(db, "updates"), 
             (snapshot) => {
+              // 1. Get Cloud Data
               const firebaseStaff = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
               }));
 
-              // --- FIXED MERGE LOGIC START ---
+              // --- MERGE LOGIC START ---
               const staffMap = new Map();
               
               // A. Load Hardcoded Data
-              // PRIORITY FIX: Use 'id' as the Primary Key if it exists.
               initialContacts.forEach(contact => {
-                const uniqueKey = contact.id 
-                  ? String(contact.id).trim() 
-                  : (contact.employeeId ? String(contact.employeeId).trim() : null);
-                
-                if (uniqueKey) staffMap.set(uniqueKey, contact);
+                const uniqueKey = contact.employeeId 
+                  ? String(contact.employeeId).trim().toLowerCase() 
+                  : String(contact.id).trim();
+                staffMap.set(uniqueKey, contact);
               });
               
               // B. Load Firebase Data (Overwrites Hardcoded)
-              // PRIORITY FIX: Same logic. 'id' first. This ensures matches.
               firebaseStaff.forEach(contact => {
-                const uniqueKey = contact.id 
-                  ? String(contact.id).trim() 
-                  : (contact.employeeId ? String(contact.employeeId).trim() : null);
-                
-                if (uniqueKey) {
-                    // Merge existing fields with new fields
-                    const existing = staffMap.get(uniqueKey) || {};
-                    staffMap.set(uniqueKey, { ...existing, ...contact });
-                }
+                const uniqueKey = contact.employeeId 
+                  ? String(contact.employeeId).trim().toLowerCase() 
+                  : String(contact.id).trim();
+                staffMap.set(uniqueKey, contact);
               });
               
               const allStaff = Array.from(staffMap.values());
@@ -145,13 +150,16 @@ const TransportScreen = () => {
 
               setMasterContacts(allStaff);
 
+              // Cache locally
               AsyncStorage.setItem('aditya_contacts_master', JSON.stringify(allStaff))
                 .catch(err => console.log('⚠️ Cache save failed:', err));
 
+              // --- RECALCULATE COUNTS ---
               setTransportUnits(calculateTransportUnits(allStaff));
             },
             (error) => {
               console.error('❌ Real-time listener error:', error);
+              // Fallback to cached data
               AsyncStorage.getItem('aditya_contacts_master').then(cached => {
                   if(cached) {
                       const allStaff = JSON.parse(cached);
@@ -181,8 +189,10 @@ const TransportScreen = () => {
   // ---------------------------------------------------------
   useEffect(() => {
     if (selectedUnit) {
+        // Filter from MASTER list using Smart Match
         let peopleInUnit = masterContacts.filter(c => checkTransportMatch(c, selectedUnit));
 
+        // Search Filter
         if (searchQuery) {
             const formattedQuery = searchQuery.toLowerCase();
             peopleInUnit = peopleInUnit.filter((item) => {
@@ -193,6 +203,7 @@ const TransportScreen = () => {
                 );
             });
         }
+
         setFilteredContacts(peopleInUnit);
     }
   }, [masterContacts, selectedUnit, searchQuery]);
@@ -216,7 +227,9 @@ const TransportScreen = () => {
 
   // --- NAVIGATION LOGIC ---
   const handleUnitPress = (unitName) => {
+    // Filter from MASTER list
     const peopleInUnit = masterContacts.filter(c => checkTransportMatch(c, unitName));
+
     setFilteredContacts(peopleInUnit);
     setSelectedUnit(unitName);
     setSearchQuery('');
@@ -225,11 +238,13 @@ const TransportScreen = () => {
   // --- SEARCH LOGIC ---
   const onChangeSearch = (query) => {
     setSearchQuery(query);
+    // Logic handled by useEffect
   };
 
   // --- RENDER: UNIT CARD ---
   const renderUnitItem = ({ item }) => {
     const style = getTransportStyle(item.name);
+    
     return (
       <TouchableOpacity 
         style={styles.card} 
@@ -282,23 +297,29 @@ const TransportScreen = () => {
       {/* HEADER */}
       <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
         {selectedUnit ? (
+          // VIEW 1: INSIDE UNIT
           <View style={styles.headerContent}>
               <TouchableOpacity onPress={() => setSelectedUnit(null)} style={styles.backBtn}>
                  <Ionicons name="arrow-back" size={24} color="white" />
               </TouchableOpacity>
+              
               <Text style={styles.headerTitle} numberOfLines={1}>
                  {selectedUnit}
               </Text>
+              
               <View style={{width: 24}} /> 
           </View>
         ) : (
+          // VIEW 2: MAIN LIST
           <View style={styles.headerContent}>
               <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                  <Ionicons name="arrow-back" size={24} color="white" />
               </TouchableOpacity>
+
               <Text style={styles.headerTitle}>
                  Transport
               </Text>
+
               <View style={{width: 24}} /> 
           </View>
         )}
@@ -366,6 +387,7 @@ const styles = StyleSheet.create({
   listContainer: { padding: 15, paddingBottom: 40 },
   sectionHeader: { fontSize: 14, fontWeight: '700', color: '#888', marginBottom: 10, marginLeft: 5, textTransform: 'uppercase', letterSpacing: 1 },
   
+  // Card
   card: {
     backgroundColor: 'white',
     borderRadius: 15,
@@ -384,6 +406,7 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 16, fontWeight: '700', color: '#333', marginBottom: 4 },
   cardCount: { fontSize: 13, color: '#888', fontWeight: '500' },
 
+  // Contact Card
   contactCard: { backgroundColor: 'white', borderRadius: 12, marginBottom: 10, elevation: 2, overflow: 'hidden' },
   contactRow: { flexDirection: 'row', alignItems: 'center', padding: 15 },
   contactDetails: { flex: 1, marginLeft: 15 },
@@ -395,6 +418,7 @@ const styles = StyleSheet.create({
   searchBar: { borderRadius: 12, backgroundColor: 'white', elevation: 2, height: 45 },
   searchInput: { fontSize: 15, alignSelf: 'center' },
   
+  // Empty State
   emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 50 },
   emptyText: { color: '#999', marginTop: 10, fontSize: 16 }
 });

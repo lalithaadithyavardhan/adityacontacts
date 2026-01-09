@@ -606,6 +606,259 @@ export const initialContacts = [
 
 
 
+// Smart Interview Coordinators Employees Data
+
+  {
+    "id": "5568",
+    "name": "P V V S D NAGENDRUDU",
+    "category": "faculty",
+    "department": "AIML",
+    "role": "Assistant Professor",
+    "designation": "Assistant Professor & Smart Interview Coordinators",
+    "office": "Aditya University",
+    "phone": "9959067891",
+    "email": "nagendrudup@adityauniversity.in",
+    "isFavorite": false,
+    "employeeId": "5568",
+    "password": "pass"
+  },
+  {
+    "id": "6395",
+    "name": "BODDANI MARUTHI SAI DURGA DEVI",
+    "category": "faculty",
+    "department": "AIML",
+    "role": "Assistant Professor",
+    "designation": "Assistant Professor & Smart Interview Coordinators",
+    "office": "Aditya University",
+    "phone": "9533768369",
+    "email": "saidurgadevi.boddani@acet.ac.in",
+    "isFavorite": false,
+    "employeeId": "6395",
+    "password": "pass"
+  },
+  {
+    "id": "201",
+    "name": "VINJAMURI VENKATA KAMESH",
+    "category": "faculty",
+    "department": "CSE",
+    "role": "Professor",
+    "designation": "Professor & Smart Interview Coordinators",
+    "office": "Aditya University",
+    "phone": "9948566975",
+    "email": "venkatakamesh.vinjamuri@adityauniversity.in",
+    "isFavorite": false,
+    "employeeId": "201",
+    "password": "pass"
+  },
+  {
+    "id": "4926",
+    "name": "NADELLA SUNIL",
+    "category": "faculty",
+    "department": "CSE1",
+    "role": "Associate Professor",
+    "designation": "Associate Professor & Smart Interview Coordinators",
+    "office": "Aditya University",
+    "phone": "9848325165",
+    "email": "sunil.nadella@acet.ac.in",
+    "isFavorite": false,
+    "employeeId": "4926",
+    "password": "pass"
+  },
+  {
+    "id": "4502",
+    "name": "Padala Bhupa Reddy",
+    "category": "faculty",
+    "department": "CSE-1",
+    "role": "Assistant Professor",
+    "designation": "Assistant Professor & Smart Interview Coordinators",
+    "office": "Aditya University",
+    "phone": "9542540040",
+    "email": "bhupareddy.padala@acet.ac.in",
+    "isFavorite": false,
+    "employeeId": "4502",
+    "password": "pass"
+  },
+  {
+    "id": "5756",
+    "name": "Yerramsetti Srinivasarao",
+    "category": "faculty",
+    "department": "CSE-DS&IoT",
+    "role": "Assistant Professor",
+    "designation": "Assistant Professor & Smart Interview Coordinators",
+    "office": "Aditya University",
+    "phone": "9441385654",
+    "email": "srinivasarao.yerramsetti@acet.ac.in",
+    "isFavorite": false,
+    "employeeId": "5756",
+    "password": "pass"
+  },
+  {
+    "id": "4982",
+    "name": "MEDAPATI SUDHEER KUMAR REDDY",
+    "category": "faculty",
+    "department": "ECE",
+    "role": "Assistant Professor",
+    "designation": "Assistant Professor & Smart Interview Coordinators",
+    "office": "Aditya University",
+    "phone": "9848373751",
+    "email": "sudheerkumar.medapati@acet.ac.in",
+    "isFavorite": false,
+    "employeeId": "4982",
+    "password": "pass"
+  },
+  {
+    "id": "1818",
+    "name": "K L V PRASAD",
+    "category": "faculty",
+    "department": "ECE",
+    "role": "Assistant Professor",
+    "designation": "Assistant Professor & Smart Interview Coordinators",
+    "office": "Aditya University",
+    "phone": "9963230878",
+    "email": "lakshmivijayaprasad.korangi@acet.ac.in",
+    "isFavorite": false,
+    "employeeId": "1818",
+    "password": "pass"
+  },
+  {
+    "id": "6416",
+    "name": "RAMOJU BHEEMA SANKARAM",
+    "category": "faculty",
+    "department": "ECE",
+    "role": "Assistant Professor",
+    "designation": "Assistant Professor & Smart Interview Coordinators",
+    "office": "Aditya University",
+    "phone": "8919427511",
+    "email": "bheemasankaramr@adityauniversity.in",
+    "isFavorite": false,
+    "employeeId": "6416",
+    "password": "pass"
+  },
+  {
+    "id": "4332",
+    "name": "Belagam Raghava Maheedhar",
+    "category": "faculty",
+    "department": "IT",
+    "role": "Assistant Professor",
+    "designation": "Assistant Professor & Smart Interview Coordinators",
+    "office": "Aditya University",
+    "phone": "8019184695",
+    "email": "maheedhar.belagam@acet.ac.in",
+    "isFavorite": false,
+    "employeeId": "4332",
+    "password": "pass"
+  },
+  {
+    "id": "6559",
+    "name": "CHITNEEDI KASI VISWANADHAM",
+    "category": "faculty",
+    "department": "IT",
+    "role": "Assistant Professor",
+    "designation": "Assistant Professor & Smart Interview Coordinators",
+    "office": "Aditya University",
+    "phone": "8519950150",
+    "email": "kviswanadhamch@adityauniversity.in",
+    "isFavorite": false,
+    "employeeId": "6559",
+    "password": "pass"
+  },
+  {
+    "id": "5395",
+    "name": "KALE NAGA VENKATA SRINIVAS",
+    "category": "faculty",
+    "department": "CSE 2",
+    "role": "Assistant Professor",
+    "designation": "Assistant Professor & Smart Interview Coordinators",
+    "office": "Aditya University",
+    "phone": "9959199112",
+    "email": "venkatasrinivas.kale@acet.ac.in",
+    "isFavorite": false,
+    "employeeId": "5395",
+    "password": "pass"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// GPP Coordinators Employees Data
+
+
+
+  {
+    "id": "1GPP",
+    "name": "ALAMANDA SOPHIA",
+    "category": "faculty",
+    "department": "Computer Science & Engineering",
+    "role": "Assistant Professor",
+    "designation": "Assistant Professor & GPP Coordinators",
+    "office": "Aditya University",
+    "phone": "8125443248",
+    "email": "sophiaa@adityauniversity.in",
+    "isFavorite": false,
+    "employeeId": "6132",
+    "password": "pass"
+  },
+  {
+    "id": "2GPP",
+    "name": "PVVSD NAGENDRUDU",
+    "category": "faculty",
+    "department": "AIML",
+    "role": "Assistant Professor",
+    "designation": "Assistant Professor & GPP Coordinators",
+    "office": "Aditya University",
+    "phone": "9959067891",
+    "email": "nagendrudup@adityauniversity.in",
+    "isFavorite": false,
+    "employeeId": "5568",
+    "password": "pass"
+  },
+  {
+    "id": "3GPP",
+    "name": "SOLOMAN RAJU CHERUKURI",
+    "category": "faculty",
+    "department": "Information Technology",
+    "role": "Assistant Professor",
+    "designation": "Assistant Professor & GPP Coordinators",
+    "office": "Aditya University",
+    "phone": "8919747558",
+    "email": "solomanrajuch@adityauniversity.in",
+    "location": "Aditya University",
+    "isFavorite": false,
+    "employeeId": "5698",
+    "password": "pass"
+  },
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
 
 // APSSDC - SIEMENS LAB STAFF Employees Data
 

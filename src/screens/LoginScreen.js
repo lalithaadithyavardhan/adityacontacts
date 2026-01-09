@@ -17,30 +17,28 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // --- FIREBASE IMPORTS ---
 import { collection, getDocs } from 'firebase/firestore';
-// Make sure this path matches where your firebaseConfig.js is located
+// Make sure this path matches your file structure!
 import { db } from '../firebaseConfig'; 
 
 // 1. IMPORT UTILS
 import { FileSystemService } from '../utils/FileSystemService'; 
 
 // ---------------------------------------------------------
-// 2. IMPORT ALL DATA FILES (The "Master List")
+// 2. IMPORT ALL DATA FILES (Based on your Screenshot)
 // ---------------------------------------------------------
-// NOTE: If you don't have one of these files yet, comment out that line!
-
-// A. General Contacts (Admin/Test users)
 import { initialContacts as mainData } from '../data/contactsData'; 
-
-// B. Schools & Departments
-import { initialContacts as scienceData } from '../data/SchoolOfScienceData';
-import { initialContacts as businessData } from '../data/SchoolOfBusinessData';
-import { initialContacts as placementData } from '../data/PlacementAndTrainingData';
+import { initialContacts as academicData } from '../data/AcademicSupportData';
+import { initialContacts as emergencyData } from '../data/EmergencyData';
 import { initialContacts as freshmanData } from '../data/FreshmanEngineeringData';
-import { initialContacts as pharmacyData } from '../data/SchoolOfPharmacyData';
-import { initialContacts as engineeringData } from '../data/SchoolOfEnggData';
-// C. Support & Offices
+import { initialContacts as hostelData } from '../data/HostelsAndResidentialData'; // Check file name carefully
 import { initialContacts as officeData } from '../data/OfficesData';
-// Add any others here (e.g., DeansData, HostelData)
+import { initialContacts as placementData } from '../data/PlacementAndTrainingData';
+import { initialContacts as businessData } from '../data/SchoolOfBusinessData';
+import { initialContacts as enggData } from '../data/SchoolOfEnggData';
+import { initialContacts as pharmacyData } from '../data/SchoolOfPharmacyData';
+import { initialContacts as scienceData } from '../data/SchoolOfScienceData';
+import { initialContacts as serviceData } from '../data/ServiceAndMaintenanceData'; // Check file name
+import { initialContacts as transportData } from '../data/TransportData';
 
 const LoginScreen = ({ navigation }) => {
   // --- STATE ---
@@ -73,7 +71,7 @@ const LoginScreen = ({ navigation }) => {
       return;
     }
 
-    // --- DEVELOPER BACKDOOR (Always works) ---
+    // --- DEVELOPER BACKDOOR ---
     if (employeeId === 'dev' && password === 'root') {
         setIsLoading(false); 
         navigation.replace('DeveloperScreen'); 
@@ -86,17 +84,22 @@ const LoginScreen = ({ navigation }) => {
 
       // 3. FETCH & MERGE DATA
       
-      // --- A. COMBINE ALL HARDCODED FILES ---
-      // We use (x || []) to prevent crashing if a file import is undefined
+      // --- A. COMBINE ALL 13 FILES ---
+      // We use (x || []) to prevent crashing if a file is empty or missing exports
       const allHardcodedData = [
         ...(mainData || []),
-        ...(scienceData || []),
-        ...(businessData || []),
-        ...(placementData || []),
+        ...(academicData || []),
+        ...(emergencyData || []),
         ...(freshmanData || []),
-        ...(pharmacyData || []),
+        ...(hostelData || []),
         ...(officeData || []),
-        ...(engineeringData || []),
+        ...(placementData || []),
+        ...(businessData || []),
+        ...(enggData || []),
+        ...(pharmacyData || []),
+        ...(scienceData || []),
+        ...(serviceData || []),
+        ...(transportData || []),
       ];
 
       let allData = [...allHardcodedData];
@@ -112,7 +115,7 @@ const LoginScreen = ({ navigation }) => {
         // --- C. INTELLIGENT MERGE ---
         const staffMap = new Map();
 
-        // Helper to safely generate a key
+        // Helper to safely generate a key (lower case string)
         const getKey = (c) => {
             const raw = c.employeeId || c.id;
             return String(raw).trim().toLowerCase();
@@ -121,8 +124,9 @@ const LoginScreen = ({ navigation }) => {
         // 1. Load Hardcoded Data
         allData.forEach(contact => {
             const key = getKey(contact);
-            // If we already have this person, only overwrite if the new one has a password
-            // This prevents "Display Data" (no password) from erasing "Login Data" (with password)
+            
+            // If we already found this person, ONLY overwrite if the new entry has a password
+            // (This prevents a "Display Only" entry from overwriting a "Login" entry)
             if (staffMap.has(key)) {
                 const existing = staffMap.get(key);
                 if (!existing.password && contact.password) {
@@ -133,7 +137,7 @@ const LoginScreen = ({ navigation }) => {
             }
         });
 
-        // 2. Load Firebase Data (Always wins)
+        // 2. Load Firebase Data (Always wins - Firebase updates are supreme)
         firebaseStaff.forEach(contact => {
             const key = getKey(contact);
             staffMap.set(key, contact);
@@ -144,29 +148,27 @@ const LoginScreen = ({ navigation }) => {
 
       } catch (firebaseError) {
         console.log("⚠️ Firebase fetch failed (Offline?), using local data only.");
-        // Optional: Check FileSystem backup
+        // Optional: Check FileSystem backup if you implemented it
         const fsData = await FileSystemService.loadAllData();
         if (fsData && Array.isArray(fsData) && fsData.length > 0) {
              allData = fsData;
         }
       }
 
-      // 4. Authenticate User (STRICT MATCHING)
+      // 4. Authenticate User (STRICT TEXT MATCHING)
       const cleanInputID = employeeId.trim().toLowerCase();
       const cleanInputPass = password.trim();
 
       const user = allData.find((c) => {
-        // Safe conversion
+        // Safe conversion to strings
         const dataEmpID = c.employeeId ? String(c.employeeId).trim().toLowerCase() : "";
         const dataID = c.id ? String(c.id).trim().toLowerCase() : "";
-        
-        // IMPORTANT: Ensure password exists before trimming
         const dataPass = c.password ? String(c.password).trim() : "";
 
-        // Check 1: Match Employee ID
+        // Check 1: Match Employee ID + Password
         if (dataEmpID === cleanInputID && dataPass === cleanInputPass) return true;
 
-        // Check 2: Match Internal ID (Fallback)
+        // Check 2: Match Internal ID + Password (Fallback)
         if (dataID === cleanInputID && dataPass === cleanInputPass) return true;
 
         return false;
@@ -177,7 +179,7 @@ const LoginScreen = ({ navigation }) => {
         // Save Session
         await AsyncStorage.setItem('userSession', JSON.stringify(user));
         
-        // Save Master List so other screens see the full combined data
+        // Save Master List (So Search works globally)
         await AsyncStorage.setItem('aditya_contacts_master', JSON.stringify(allData)); 
         
         console.log("✅ Login Success:", user.name);

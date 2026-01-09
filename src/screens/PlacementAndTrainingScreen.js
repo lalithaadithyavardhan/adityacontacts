@@ -18,7 +18,8 @@ import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebaseConfig'; 
 
 // 1. IMPORT DATA (Fallback)
-import { initialContacts } from '../data/PlacementAndTrainingData'; 
+import { initialContacts } from '../data/PlacementAndTrainingData';
+
 
 // ---------------------------------------------------------
 // 2. CONFIGURATION: PRIORITY RULES
