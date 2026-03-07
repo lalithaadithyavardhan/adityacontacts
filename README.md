@@ -8,16 +8,30 @@ connected to **MongoDB**.
 The application allows users to easily search contacts, manage phone
 numbers, and directly initiate calls from within the app.
 
+## 📸 App Showcase
 
-
-
-
-
-
-![WhatsApp Image 2026-03-07 at 10 41 10](https://github.com/user-attachments/assets/282da9d8-07f5-41e8-9aa2-d4b669a5db7a)
-
-
-
+<table align="center">
+  <tr>
+    <td align="center"><b>Loading Screen</b></td>
+    <td align="center"><b>Home Screen</b></td>
+    <td align="center"><b>Officers Tab</b></td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/282da9d8-07f5-41e8-9aa2-d4b669a5db7a" width="250" alt="Loading screen"></td>
+    <td><img src="https://github.com/user-attachments/assets/8263feb1-34b4-4f3b-bfee-89c80e75f9e2" width="250" alt="HomeScreen"></td>
+    <td><img src="https://github.com/user-attachments/assets/32e707f6-860a-4677-b114-0a9e57c3959d" width="250" alt="OFFICERS TAB"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Directory List</b></td>
+    <td align="center"><b>Contact Details</b></td>
+    <td align="center"><b>Share Contact Card</b></td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/1c8b9044-a576-4db7-8b04-e53c02077629" width="250" alt="Contacts list"></td>
+    <td><img src="https://github.com/user-attachments/assets/68cb3924-4468-4d0b-8972-ca10075bfbf5" width="250" alt="CONTACT DETAILS"></td>
+    <td><img src="https://github.com/user-attachments/assets/78284c45-36ea-4d6f-b009-4b21ecb314dd" width="250" alt="Share Contact"></td>
+  </tr>
+</table>
 
 ------------------------------------------------------------------------
 
