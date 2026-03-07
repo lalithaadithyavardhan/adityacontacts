@@ -8,6 +8,17 @@ connected to **MongoDB**.
 The application allows users to easily search contacts, manage phone
 numbers, and directly initiate calls from within the app.
 
+
+
+
+
+
+
+![WhatsApp Image 2026-03-07 at 10 41 10](https://github.com/user-attachments/assets/282da9d8-07f5-41e8-9aa2-d4b669a5db7a)
+
+
+
+
 ------------------------------------------------------------------------
 
 # ✨ Features
